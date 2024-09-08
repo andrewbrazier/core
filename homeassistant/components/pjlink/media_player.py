@@ -94,12 +94,11 @@ class PjLinkDevice(MediaPlayerEntity):
         self._attr_is_volume_muted = False
         self._attr_source = None
 
-    def _setup_projector(self):
+    def _setup_projector(self, projector):
         try:
-            with self.projector() as projector:
-                if not self._attr_name:
-                    self._attr_name = projector.get_name()
-                inputs = projector.get_inputs()
+            if not self._attr_name:
+                self._attr_name = projector.get_name()
+            inputs = projector.get_inputs()
         except ProjectorError as err:
             if str(err) == ERR_PROJECTOR_UNAVAILABLE:
                 return False
@@ -123,16 +122,16 @@ class PjLinkDevice(MediaPlayerEntity):
 
     def update(self) -> None:
         """Get the latest state from the device."""
-
-        if not self._attr_available:
-            self._attr_available = self._setup_projector()
-
-        if not self._attr_available:
-            self._force_off()
-            return
-
         try:
             with self.projector() as projector:
+            
+                if not self._attr_available:
+                    self._attr_available = self._setup_projector(projector)
+
+                if not self._attr_available:
+                    self._force_off()
+                    return
+                
                 pwstate = projector.get_power()
                 if pwstate in ("on", "warm-up"):
                     self._attr_state = MediaPlayerState.ON
